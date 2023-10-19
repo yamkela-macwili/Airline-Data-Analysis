@@ -1,0 +1,109 @@
+---
+title: "Airline Data Analysis"
+author: "Yamkela Macwili"
+date: "2023-10-16"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Required Libraries
+
+```{r}
+library("tidyverse")
+library("Hmisc")
+library("corrplot")
+library(rvest)
+
+```
+
+## Dataset Glossary
+```{r}
+# Define the URL
+#url <- "C:/Users/yamke/Downloads/airline_2m/Airline/table3.csv"
+url <- "C:/Users/yamke/OneDrive/Documents/Airline Analysis/Airline/table3.csv"
+dataset_glossary <- read.csv( url)
+
+# Print the entire 3rd table
+print(dataset_glossary)
+
+```
+
+## Load and Inspect the Dataset
+
+```{r}
+# Define the file path and read the dataset
+file_path <- "C:/Users/yamke/Downloads/airline_2m/airline_2m.csv"
+sub_airline <- read.csv(file_path, nrows = 8000)
+
+# Display the structure of the dataset
+glimpse(sub_airline)
+```
+
+## Data Preprocessing
+
+```{r}
+# Count missing values in all columns
+missing_values <- sub_airline %>% map(~sum(is.na(.)))
+missing_values
+
+```
+
+
+## Data Visualization
+### Histogram of ArrDelay
+
+```{r}
+# Create a histogram of ArrDelay
+ggplot(data = sub_airline, mapping = aes(x = ArrDelay)) +
+  geom_histogram(binwidth = 30, color = "white", fill = "red") +
+  coord_cartesian(xlim = c(-60, 954))
+
+```
+
+## Descriptive Statistics - Mean and Standard Deviation of ArrDelayMinutes
+
+```{r}
+# Descriptive Statistics - Mean and Standard Deviation of ArrDelayMinutes
+summary_airline_delay <- sub_airline %>%
+  group_by(Reporting_Airline) %>%
+  summarise(mean = mean(ArrDelayMinutes), std_dev = sd(ArrDelayMinutes))
+summary_airline_delay
+
+```
+
+## Linear Relationships
+### Correlation Matrix Heatmap
+
+```{r}
+# Correlation between different delay types and ArrDelayMinutes
+corr_airline <- sub_airline %>%
+  select(ArrDelayMinutes, DepDelayMinutes, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay)
+
+airline_correlation <- rcorr(as.matrix(corr_airline), type = "pearson")
+correlation_matrix <- airline_correlation$r
+
+# Set the position of x-axis labels to the bottom (order = "hclust")
+corrplot(correlation_matrix, method = "color", tl.col = "black", tl.srt = 45, addCoef.col = "black",
+         tl.pos = "b", title = "Correlation Heatmap", order = "hclust")
+
+```
+
+## Model development 
+### The question: Can we predict the arrival delay of a flight?
+
+```{r}
+mult_linear_reg <- lm(ArrDelay ~ DepDelayMinutes + CarrierDelay + WeatherDelay + NASDelay + SecurityDelay + LateAircraftDelay, data = sub_airline)
+summary(mult_linear_reg)
+
+plot(mult_linear_reg)
+```
+
+## Conclusion
+### This R Markdown document covers various aspects of airline data analysis, including data preprocessing, data visualization, and examining linear relationships through a correlation matrix heatmap.

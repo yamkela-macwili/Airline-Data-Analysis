@@ -1,0 +1,43 @@
+# Load the necessary libraries
+library(tidyverse)
+
+# Load the dataset
+airline_data <- read.csv("data/airline_data.csv")
+
+# Question 5.2: Can we predict the flight delay? (Model Testing)
+
+# Data Exploration
+# Select relevant columns for analysis
+delay_data <- airline_data %>%
+  select(ArrDelayMinutes, DepDelayMinutes, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay)
+
+# Perform multiple linear regression
+linear_reg_model <- lm(ArrDelayMinutes ~ DepDelayMinutes + CarrierDelay + WeatherDelay + NASDelay + SecurityDelay + LateAircraftDelay, data = delay_data)
+
+# Split the data into training and testing sets (modify as needed)
+# For demonstration purposes, we're using a simple random split here
+set.seed(123)  # Set a seed for reproducibility
+sample_indices <- sample(1:nrow(delay_data), size = 0.2 * nrow(delay_data))  # 80% training, 20% testing
+train_data <- delay_data[-sample_indices, ]
+test_data <- delay_data[sample_indices, ]
+
+# Make predictions on the test data
+predictions <- predict(linear_reg_model, newdata = test_data)
+
+# Calculate metrics for model evaluation
+r_squared <- summary(linear_reg_model)$r.squared
+mae <- mean(abs(test_data$ArrDelayMinutes - predictions))
+
+# Print and save the evaluation results
+cat("Model Testing Results\n")
+cat("---------------------\n")
+cat(paste("R-squared:", r_squared, "\n"))
+cat(paste("Mean Absolute Error (MAE):", mae, "\n"))
+
+# Save the evaluation results in the question_5_output folder
+sink("outputs/question_5_output/model_testing_results.txt")
+cat("Model Testing Results\n")
+cat("---------------------\n")
+cat(paste("R-squared:", r_squared, "\n"))
+cat(paste("Mean Absolute Error (MAE):", mae, "\n"))
+sink()

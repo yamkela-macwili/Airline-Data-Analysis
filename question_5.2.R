@@ -1,0 +1,63 @@
+# Load the necessary libraries
+library(tidyverse)
+
+# Load the dataset
+airline_data <- read.csv("data/airline_data.csv")
+
+# Question 5.2: Can we predict the flight delay? (Model Evaluation)
+
+# Data Exploration
+# Select relevant columns for analysis
+delay_data <- airline_data %>%
+  select(ArrDelayMinutes, DepDelayMinutes, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay)
+
+# Perform multiple linear regression
+linear_reg_model <- lm(ArrDelayMinutes ~ DepDelayMinutes + CarrierDelay + WeatherDelay + NASDelay + SecurityDelay + LateAircraftDelay, data = delay_data)
+
+# Evaluate the linear regression model
+model_evaluation <- function(model, data) {
+  # Predictions from the model
+  predictions <- predict(model, newdata = data)
+  
+  # Calculate R-squared
+  r_squared <- summary(model)$r.squared
+  
+  # Calculate Mean Absolute Error (MAE)
+  mae <- mean(abs(data$ArrDelayMinutes - predictions))
+  
+  return(list(RSquared = r_squared, MAE = mae))
+}
+
+# Split the data into training and testing sets (if needed)
+# Modify this section based on your data splitting approach
+# For example, using the sample.split function from the "caTools" package
+
+# Evaluate the model on the testing data (modify as needed)
+# test_data <- data.frame(DepDelayMinutes = test_data$DepDelayMinutes, 
+#                        CarrierDelay = test_data$CarrierDelay,
+#                        WeatherDelay = test_data$WeatherDelay,
+#                        NASDelay = test_data$NASDelay,
+#                        SecurityDelay = test_data$SecurityDelay,
+#                        LateAircraftDelay = test_data$LateAircraftDelay,
+#                        ArrDelayMinutes = test_data$ArrDelayMinutes)
+
+# evaluation_result <- model_evaluation(linear_reg_model, test_data)
+
+# Print and save the evaluation results
+cat("Model Evaluation Results\n")
+cat("------------------------\n")
+cat(paste("R-squared:", evaluation_result$RSquared, "\n"))
+cat(paste("Mean Absolute Error (MAE):", evaluation_result$MAE, "\n"))
+
+# Create diagnostic plots
+par(mfrow=c(2,2))
+plot(linear_reg_model)
+dev.off()
+
+# Save the evaluation results and diagnostic plots in the question_5_output folder
+sink("outputs/question_5_output/model_evaluation_results.txt")
+cat("Model Evaluation Results\n")
+cat("------------------------\n")
+cat(paste("R-squared:", evaluation_result$RSquared, "\n"))
+cat(paste("Mean Absolute Error (MAE):", evaluation_result$MAE, "\n"))
+sink()

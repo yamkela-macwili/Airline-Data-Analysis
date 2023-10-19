@@ -1,0 +1,180 @@
+---
+title: "Airline Data Analysis"
+author: "Yamkela Macwili"
+date: "2023-10-16"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: show
+  word_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+Delays in airline flight can be frustrating for both passengers and airlines. While some delays are caused by factors beyond anyone's control, others can be predicted and possibly prevented. To address this issue, we aim to answer the question: "can we predict the likelihood of a flight delay?".
+
+Predicting flight delays is a critical task that can have a significant impact on the aviation industry. By identifying the factors that contribute to delays and developing predictive models, enhance passenger experience, and reduce the financial burden of delays on airlines.
+
+In this analysis, we will explore historical flight data to uncover patterns and relationships that may help us predict flight delays. We will investigate various factors such as departure delays, carrier-related delays, and more. 
+
+
+### Load Required Libraries
+
+```{r}
+library("tidyverse")
+library("Hmisc")
+library("corrplot")
+library(knitr)
+
+
+```
+
+### Load and Inspect the Dataset
+```{r}
+# Define the file path and read the dataset
+file_path <- "C:/Users/yamke/Downloads/airline_2m/airline_2m.csv"
+sub_airline <- read.csv(file_path, nrows = 8000)
+
+# Display the structure of the dataset
+glimpse(sub_airline)
+
+```
+The dataset has 8000 rows and 109 columns.
+
+## Dataset Glossary
+Now let's look at the features and description of the dataset.
+```{r}
+url <- "C:/Users/yamke/OneDrive/Documents/Airline Analysis/Airline/table3.csv"
+dataset_glossary <- read.csv(url)
+
+# Print the dataset glossary in tabular format
+kable(dataset_glossary)
+
+```
+Variables of the Airline-Reporting Carrier On-Time Performance dataset include:
+
+  - The target value "ArrDelay" or "ArrDelayMinutes".
+  
+  - Reasons for delay.
+
+## Data Preprocessing
+Lets us have a look at the our dataset for missing values.
+```{r}
+# Count missing values in all columns
+missing_values <- sub_airline %>% map(~sum(is.na(.)))
+missing_values
+
+```
+
+Dealing with the missing values first.
+N/A on our delay type means no delay, therefore we replace the missing values with 0.
+```{r}
+#Replace the missing values 
+sub_airline <- sub_airline %>%
+  mutate(across(contains("Delay"), ~replace(., is.na(.), 0)))
+
+# Select and view the delay-related columns
+delay_columns <- select(sub_airline, contains("Delay"))
+kable(head(delay_columns))
+```
+Everything seems good, all the missing values are replaced with 0. Now we can visualize the data.
+
+## Data Visualization
+Histogram of ArrDelay
+```{r}
+# Check the range 
+range(sub_airline$ArrDelay)
+
+# Create a histogram of ArrDelay
+ggplot(data = sub_airline, mapping = aes(x = ArrDelay)) +
+  geom_histogram(binwidth = 20, color = "white", fill = "red") +
+  coord_cartesian(xlim = c(-60, 954))+
+  labs(title = "The distribution of arrival delay times for flights",
+       x = "Arrival Delay (minutes)", y = "Count")
+
+```
+The plot shows that, the count of flight which arrive on time is much greater than the flights that arrive early or the ones that arrive late. Though it is visible that most flight arrive late, so our next question is, What causes a flight delay?
+
+### What causes a flight delay?
+```{r}
+count_airline <- sub_airline%>%
+  count(sub_airline$Reporting_Airline)
+kable(count_airline)
+
+# Descriptive Statistics - Mean and Standard Deviation of ArrDelayMinutes
+summary_airline_delay <- sub_airline %>%
+  group_by(Reporting_Airline) %>%
+  summarise(mean = mean(ArrDelayMinutes), std_dev = sd(ArrDelayMinutes))
+kable(summary_airline_delay)
+
+
+# Create a simple average across Reporting_Airline and DayOfWeek
+average_delays <- sub_airline %>% 
+  group_by(Reporting_Airline, DayOfWeek)%>%
+  summarise(mean_delays = mean(ArrDelayMinutes))
+kable(head(average_delays))
+
+#Sort the dataframe
+arrange_avg_delay <- average_delays %>%
+  arrange(desc(mean_delays))
+kable(head(arrange_avg_delay))
+
+# Visualize the data using Heatmap
+average_delays %>%
+  ggplot(aes( x = Reporting_Airline,
+              y = DayOfWeek,
+              fill = mean_delays))+
+  geom_tile(color = "black", linewidth = 0.2)+
+  scale_fill_gradient(low = "yellow",
+                      high = "red")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(data = sub_airline, mapping = aes(x = Reporting_Airline, y = ArrDelayMinutes))+
+  geom_boxplot(fill = "lightblue", color = "blue")+
+  labs(title = "Distribution of Arrival Delays by Airline",
+       x = "Airline", y = "Arrival Delay (minutes)")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust =1))
+
+     
+
+```
+
+### Linear Relationships
+### Correlation Matrix Heatmap
+
+```{r}
+# Correlation between different delay types and ArrDelayMinutes
+corr_airline <- sub_airline %>%
+  select(ArrDelayMinutes, DepDelayMinutes, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay)
+
+airline_correlation <- rcorr(as.matrix(corr_airline), type = "pearson")
+correlation_matrix <- airline_correlation$r
+kable(correlation_matrix, format = "markdown")
+```
+
+```{r}
+corrplot(correlation_matrix, method = "color", tl.col = "black", tl.srt = 45, addCoef.col = "black", type = "full",diag = FALSE,
+          title = "Correlation Heatmap", order = "hclust")
+```
+
+## Model development 
+### Can we predict the arrival delay of a flight?
+
+```{r}
+mult_linear_reg <- lm(ArrDelay ~ DepDelayMinutes + CarrierDelay + WeatherDelay + NASDelay + SecurityDelay + LateAircraftDelay, data = sub_airline)
+summary(mult_linear_reg)
+```
+We can explain about 87.56% of the arrival delay of a flight with the selected delay features.
+
+```{r}
+plot(mult_linear_reg)
+```
+
+

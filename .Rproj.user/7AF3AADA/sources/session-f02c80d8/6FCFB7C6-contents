@@ -1,0 +1,36 @@
+# Load necessary libraries
+library(tidyverse)
+library(ggplot2)
+
+# Load your data into the "sub_airline" variable
+# Define the file path
+file_path <- "C:/Users/yamke/Downloads/airline_2m/airline_2m.csv"
+sub_airline <- read.csv( file_path, nrows = 8000)
+# Extract relevant columns
+airport_delay_data <- sub_airline %>%
+  select(Origin, Dest, ArrDelayMinutes)
+
+# Calculate the average arrival delay by origin airport
+avg_delay_by_origin <- airport_delay_data %>%
+  group_by(Origin) %>%
+  summarise(avg_delay = mean(ArrDelayMinutes, na.rm = TRUE))
+
+# Calculate the average arrival delay by destination airport
+avg_delay_by_dest <- airport_delay_data %>%
+  group_by(Dest) %>%
+  summarise(avg_delay = mean(ArrDelayMinutes, na.rm = TRUE))
+
+# Create a scatter plot to compare average delays by origin and destination
+ggplot(data = avg_delay_by_origin, mapping = aes(x = avg_delay)) +
+  geom_histogram(binwidth = 30, color = "white", fill = "blue", alpha = 0.7) +
+  labs(title = "Average Arrival Delay by Origin Airport",
+       x = "Average Arrival Delay (minutes)",
+       y = "Frequency") +
+  theme_minimal()
+
+ggplot(data = avg_delay_by_dest, mapping = aes(x = avg_delay)) +
+  geom_histogram(binwidth = 30, color = "white", fill = "green", alpha = 0.7) +
+  labs(title = "Average Arrival Delay by Destination Airport",
+       x = "Average Arrival Delay (minutes)",
+       y = "Frequency") +
+  theme_minimal()
