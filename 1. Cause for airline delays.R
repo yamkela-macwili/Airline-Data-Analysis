@@ -2,7 +2,7 @@
 library(tidyverse)
 
 # Load the dataset
-file_path <- "C:/Users/yamke/Downloads/airline_2m/airline_2m.csv"
+file_path <- "airline_2m.csv"
 airline_data <- read.csv( file_path, nrows = 8000)
 
 # Question 1: What is the leading cause for airline delays?
